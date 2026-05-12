@@ -69,6 +69,8 @@ CODEX_RTL_SOURCE_APP=/path/to/Codex.app
 CODEX_RTL_PATCHED_APP=/path/to/Codex-RTL.app
 CODEX_RTL_TARGET_DIRS=".vite/build webview/assets"
 CODEX_RTL_WEBVIEW_ENTRY_PATTERN='^(index|app-main)-.*\.js$'
+CODEX_RTL_ASAR_PACKAGE='@electron/asar@4.0.1'
+CODEX_RTL_FUSES_PACKAGE='@electron/fuses@2.0.0'
 ```
 
 ## Safety
@@ -76,9 +78,11 @@ CODEX_RTL_WEBVIEW_ENTRY_PATTERN='^(index|app-main)-.*\.js$'
 The script is intentionally conservative:
 
 - It refuses to patch anything except an app with bundle id `com.openai.codex`.
+- It validates that source and destination are absolute `.app` paths and refuses to patch the source path in place.
 - It never modifies `/Applications/Codex.app`.
 - It only removes `~/Applications/Codex-RTL.app` if it looks like a previous Codex RTL copy.
 - It writes a marker file inside the copied app and checks that marker before replacing/removing.
+- It pins the npm tools used by `npx` (`@electron/asar` and `@electron/fuses`) instead of using a floating latest version.
 
 ## After Codex Updates
 

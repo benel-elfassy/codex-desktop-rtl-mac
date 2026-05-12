@@ -10,6 +10,8 @@ PATCHED_ASAR="$PATCHED_APP/Contents/Resources/app.asar"
 MARKER_FILE="$PATCHED_APP/Contents/Resources/.codex-rtl-patched"
 CODEX_RTL_TARGET_DIRS="${CODEX_RTL_TARGET_DIRS:-.vite/build webview/assets}"
 CODEX_RTL_WEBVIEW_ENTRY_PATTERN="${CODEX_RTL_WEBVIEW_ENTRY_PATTERN:-^(index|app-main)-.*\\.js$}"
+CODEX_RTL_ASAR_PACKAGE="${CODEX_RTL_ASAR_PACKAGE:-@electron/asar@4.0.1}"
+CODEX_RTL_FUSES_PACKAGE="${CODEX_RTL_FUSES_PACKAGE:-@electron/fuses@2.0.0}"
 TMP_DIR=""
 
 RED='\033[0;31m'
@@ -37,7 +39,7 @@ asar_cmd() {
   if command -v asar >/dev/null 2>&1; then
     asar "$@"
   elif command -v npx >/dev/null 2>&1; then
-    npx --yes @electron/asar "$@"
+    npx --yes "$CODEX_RTL_ASAR_PACKAGE" "$@"
   else
     die "Neither asar nor npx found. Install Node.js or npm install -g @electron/asar."
   fi
@@ -45,7 +47,7 @@ asar_cmd() {
 
 fuses_cmd() {
   if command -v npx >/dev/null 2>&1; then
-    npx --yes @electron/fuses "$@"
+    npx --yes "$CODEX_RTL_FUSES_PACKAGE" "$@"
   else
     die "npx not found. Install Node.js to use @electron/fuses."
   fi
@@ -65,6 +67,22 @@ check_source_app() {
   local bundle_id
   bundle_id="$(bundle_value "$SOURCE_APP/Contents/Info.plist" CFBundleIdentifier)"
   [ "$bundle_id" = "com.openai.codex" ] || die "Refusing to patch unexpected bundle id: ${bundle_id:-unknown}."
+}
+
+validate_configured_paths() {
+  case "$SOURCE_APP" in
+    /*.app) ;;
+    *) die "SOURCE_APP must be an absolute .app path. Got: $SOURCE_APP" ;;
+  esac
+
+  case "$PATCHED_APP" in
+    /*.app) ;;
+    *) die "PATCHED_APP must be an absolute .app path. Got: $PATCHED_APP" ;;
+  esac
+
+  [ "$PATCHED_APP" != "$SOURCE_APP" ] || die "PATCHED_APP must not be the same path as SOURCE_APP."
+  [ "$PATCHED_APP" != "/" ] || die "Refusing to use / as PATCHED_APP."
+  [ "$PATCHED_APP" != "$HOME" ] || die "Refusing to use HOME as PATCHED_APP."
 }
 
 check_dependencies() {
@@ -206,6 +224,7 @@ disable_integrity_and_sign() {
 
 install_patch() {
   echo -e "\n${BOLD}${CYAN}Codex Desktop RTL Patcher - Install${NC}\n"
+  validate_configured_paths
   check_source_app
   check_dependencies
   quit_codex_rtl
@@ -223,6 +242,7 @@ install_patch() {
 
 uninstall_patch() {
   echo -e "\n${BOLD}${CYAN}Codex Desktop RTL Patcher - Uninstall${NC}\n"
+  validate_configured_paths
   if [ ! -d "$PATCHED_APP" ]; then
     warn "No patched app found at $PATCHED_APP."
     exit 0
@@ -279,6 +299,8 @@ Environment overrides:
   CODEX_RTL_PATCHED_APP=/path/to/Codex-RTL.app
   CODEX_RTL_TARGET_DIRS=".vite/build webview/assets"
   CODEX_RTL_WEBVIEW_ENTRY_PATTERN='^(index|app-main)-.*\.js$'
+  CODEX_RTL_ASAR_PACKAGE='@electron/asar@4.0.1'
+  CODEX_RTL_FUSES_PACKAGE='@electron/fuses@2.0.0'
 
 EOF
 }

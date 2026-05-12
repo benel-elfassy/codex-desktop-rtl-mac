@@ -19,4 +19,19 @@ if ! grep -q 'CODEX_RTL_WEBVIEW_ENTRY_PATTERN' "$PATCHER"; then
   exit 1
 fi
 
+if ! grep -q '@electron/asar@' "$PATCHER"; then
+  echo "patch.sh must pin @electron/asar when using npx" >&2
+  exit 1
+fi
+
+if ! grep -q '@electron/fuses@' "$PATCHER"; then
+  echo "patch.sh must pin @electron/fuses when using npx" >&2
+  exit 1
+fi
+
+if ! grep -q 'validate_configured_paths' "$PATCHER"; then
+  echo "patch.sh must validate configured app paths before install/uninstall" >&2
+  exit 1
+fi
+
 echo "injection target checks passed"
