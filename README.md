@@ -56,11 +56,20 @@ Launch `Codex-RTL.app`, not the original `Codex.app`, when you want RTL support.
 
 1. Copies `/Applications/Codex.app` to `~/Applications/Codex-RTL.app`.
 2. Extracts the Electron `app.asar` archive.
-3. Prepends `rtl-payload.js` into likely renderer JavaScript bundles under `.vite/build`.
+3. Prepends `rtl-payload.js` into likely renderer JavaScript bundles under `.vite/build` and `webview/assets`.
 4. Repacks `app.asar`.
 5. Disables Electron's embedded ASAR integrity validation fuse so the modified archive can load.
 6. Re-signs the copied app with an ad-hoc signature.
 7. Launches `Codex-RTL.app`.
+
+Advanced targeting can be adjusted with environment variables:
+
+```bash
+CODEX_RTL_SOURCE_APP=/path/to/Codex.app
+CODEX_RTL_PATCHED_APP=/path/to/Codex-RTL.app
+CODEX_RTL_TARGET_DIRS=".vite/build webview/assets"
+CODEX_RTL_WEBVIEW_ENTRY_PATTERN='^(index|app-main)-.*\.js$'
+```
 
 ## Safety
 
@@ -110,6 +119,7 @@ Make sure you launched `~/Applications/Codex-RTL.app`. The original `/Applicatio
 ```bash
 bash -n patch.sh
 node --check rtl-payload.js
+test/injection-targets.test.sh
 ./patch.sh --status
 ```
 

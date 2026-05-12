@@ -5,6 +5,7 @@ This project is mostly a macOS integration patcher. Use these checks before runn
 ```bash
 bash -n patch.sh
 node --check rtl-payload.js
+test/injection-targets.test.sh
 ./patch.sh --status
 ```
 

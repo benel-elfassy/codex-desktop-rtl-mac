@@ -8,6 +8,8 @@ SOURCE_APP="${CODEX_RTL_SOURCE_APP:-/Applications/Codex.app}"
 PATCHED_APP="${CODEX_RTL_PATCHED_APP:-$HOME/Applications/Codex-RTL.app}"
 PATCHED_ASAR="$PATCHED_APP/Contents/Resources/app.asar"
 MARKER_FILE="$PATCHED_APP/Contents/Resources/.codex-rtl-patched"
+CODEX_RTL_TARGET_DIRS="${CODEX_RTL_TARGET_DIRS:-.vite/build webview/assets}"
+CODEX_RTL_WEBVIEW_ENTRY_PATTERN="${CODEX_RTL_WEBVIEW_ENTRY_PATTERN:-^(index|app-main)-.*\\.js$}"
 TMP_DIR=""
 
 RED='\033[0;31m'
@@ -142,24 +144,39 @@ inject_payload() {
 
   local injected=0
   local skipped=0
-  local build_dir="$TMP_DIR/app/.vite/build"
-  [ -d "$build_dir" ] || die "Could not find .vite/build in Codex app.asar."
+  local found_targets=0
+  local target_dir
 
-  while IFS= read -r -d '' js_file; do
-    case "$js_file" in
-      *worker*.js|*preload*.js|*bootstrap*.js|*sentry*.js) continue ;;
-    esac
-
-    if grep -q "CODEX RTL PATCH START" "$js_file" 2>/dev/null; then
-      skipped=$((skipped + 1))
+  for target_dir in $CODEX_RTL_TARGET_DIRS; do
+    local absolute_target="$TMP_DIR/app/$target_dir"
+    if [ ! -d "$absolute_target" ]; then
+      warn "Target directory not found in ASAR: $target_dir"
       continue
     fi
 
-    cat "$PAYLOAD_FILE" "$js_file" > "$TMP_DIR/merged.js"
-    mv "$TMP_DIR/merged.js" "$js_file"
-    injected=$((injected + 1))
-    log "Injected into ${js_file#$build_dir/}"
-  done < <(find "$build_dir" -type f -name '*.js' -print0)
+    found_targets=$((found_targets + 1))
+
+    while IFS= read -r -d '' js_file; do
+      case "$js_file" in
+        *worker*.js|*preload*.js|*bootstrap*.js|*sentry*.js) continue ;;
+      esac
+      if [ "$target_dir" = "webview/assets" ] && ! basename "$js_file" | grep -Eq "$CODEX_RTL_WEBVIEW_ENTRY_PATTERN"; then
+        continue
+      fi
+
+      if grep -q "CODEX RTL PATCH START" "$js_file" 2>/dev/null; then
+        skipped=$((skipped + 1))
+        continue
+      fi
+
+      cat "$PAYLOAD_FILE" "$js_file" > "$TMP_DIR/merged.js"
+      mv "$TMP_DIR/merged.js" "$js_file"
+      injected=$((injected + 1))
+      log "Injected into ${js_file#$TMP_DIR/app/}"
+    done < <(find "$absolute_target" -type f -name '*.js' -print0)
+  done
+
+  [ "$found_targets" -gt 0 ] || die "No target JavaScript directories found. Checked: $CODEX_RTL_TARGET_DIRS"
 
   if [ "$injected" -eq 0 ] && [ "$skipped" -eq 0 ]; then
     die "No suitable renderer JavaScript files found."
@@ -260,6 +277,8 @@ Usage:
 Environment overrides:
   CODEX_RTL_SOURCE_APP=/path/to/Codex.app
   CODEX_RTL_PATCHED_APP=/path/to/Codex-RTL.app
+  CODEX_RTL_TARGET_DIRS=".vite/build webview/assets"
+  CODEX_RTL_WEBVIEW_ENTRY_PATTERN='^(index|app-main)-.*\.js$'
 
 EOF
 }
