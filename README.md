@@ -29,7 +29,7 @@ xcode-select --install
 ## Install
 
 ```bash
-git clone <this-repo-url>
+git clone https://github.com/benel-elfassy/codex-desktop-rtl-mac.git
 cd codex-desktop-rtl-mac
 chmod +x patch.sh
 ./patch.sh --install
