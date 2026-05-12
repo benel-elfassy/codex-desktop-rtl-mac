@@ -131,7 +131,7 @@
 
     el.dir = dir;
     el.style.direction = dir;
-    el.style.textAlign = 'start';
+    el.style.textAlign = dir === 'rtl' ? 'right' : 'left';
 
     if (el.tagName === 'LI' && dir === 'rtl') {
       el.style.listStylePosition = 'inside';
@@ -153,6 +153,7 @@
 
     el.dir = 'rtl';
     el.style.direction = 'rtl';
+    el.style.textAlign = 'right';
     var left = getComputedStyle(el).paddingLeft;
     if (parseFloat(left) > 0) {
       el.style.paddingRight = left;
@@ -184,7 +185,7 @@
         var dir = detectTextDir(text) || 'rtl';
         el.dir = dir;
         el.style.direction = dir;
-        el.style.textAlign = 'start';
+        el.style.textAlign = dir === 'rtl' ? 'right' : 'left';
       } else if (el.hasAttribute('dir')) {
         el.removeAttribute('dir');
         el.style.direction = '';
@@ -216,8 +217,8 @@
     style.id = STYLE_ID;
     style.textContent = [
       RTL_SELECTOR + ':not([dir]){unicode-bidi:plaintext!important;text-align:start!important}',
-      '[dir="rtl"]{direction:rtl!important}',
-      '[dir="ltr"]{direction:ltr!important}',
+      '[dir="rtl"]{direction:rtl!important;text-align:right!important}',
+      '[dir="ltr"]{direction:ltr!important;text-align:left!important}',
       LTR_SELECTOR + '{unicode-bidi:embed!important;direction:ltr!important;text-align:left!important}',
       'code,kbd,samp{unicode-bidi:isolate!important;direction:ltr!important}',
     ].join('\n');
